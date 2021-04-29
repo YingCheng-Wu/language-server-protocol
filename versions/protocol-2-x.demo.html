@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Language Server Protocol | language-server-protocol</title>
+<meta name="generator" content="Jekyll v3.9.0">
+<meta property="og:title" content="Language Server Protocol">
+<meta property="og:locale" content="en_US">
+<meta name="description" content="Defines a common protocol for language servers.">
+<meta property="og:description" content="Defines a common protocol for language servers.">
+<link rel="canonical" href="https://yingcheng-wu.github.io/language-server-protocol/versions/protocol-2-x.html">
+<meta property="og:url" content="https://yingcheng-wu.github.io/language-server-protocol/versions/protocol-2-x.html">
+<meta property="og:site_name" content="language-server-protocol">
+<meta name="twitter:card" content="summary">
+<meta property="twitter:title" content="Language Server Protocol">
+<script type="application/ld+json">
+{"description":"Defines a common protocol for language servers.","url":"https://yingcheng-wu.github.io/language-server-protocol/versions/protocol-2-x.html","@type":"WebPage","headline":"Language Server Protocol","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<style class="anchorjs"></style>
+<link rel="stylesheet" href="/language-server-protocol/assets/css/style.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="px-3 my-5 markdown-body">
+<h2><a id="user-content-messages-overview" class="anchor" aria-hidden="true" href="#messages-overview"><svg class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z"></path></svg></a>Messages overview</h2>
+<p>General</p>
+<ul>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#initialize">initialize</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#shutdown">shutdown</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_right" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/27a1.png">➡️</g-emoji> <a href="#exit">exit</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_right" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/27a1.png">➡️</g-emoji> <a href="#cancelRequest">$/cancelRequest</a></li>
+</ul>
+<p>Window</p>
+<ul>
+<li><g-emoji class="g-emoji" alias="arrow_left" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2b05.png">⬅️</g-emoji> <a href="#window_showMessage">window/showMessage</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_right_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21aa.png">↪️</g-emoji> <a href="#window_showMessageRequest">window/showMessageRequest</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_left" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2b05.png">⬅️</g-emoji> <a href="#window_logMessage">window/logMessage</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_left" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2b05.png">⬅️</g-emoji> <a href="#telemetry_event">telemetry/event</a></li>
+</ul>
+<p>Workspace</p>
+<ul>
+<li><g-emoji class="g-emoji" alias="arrow_right" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/27a1.png">➡️</g-emoji> <a href="#workspace_didChangeConfiguration">workspace/didChangeConfiguration</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_right" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/27a1.png">➡️</g-emoji> <a href="#workspace_didChangeWatchedFiles">workspace/didChangeWatchedFiles</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#workspace_symbol">workspace/symbol</a></li>
+</ul>
+<p>Document</p>
+<ul>
+<li><g-emoji class="g-emoji" alias="arrow_left" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2b05.png">⬅️</g-emoji> <a href="#textDocument_publishDiagnostics">textDocument/publishDiagnostics</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_right" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/27a1.png">➡️</g-emoji> <a href="#textDocument_didChange">textDocument/didChange</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_right" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/27a1.png">➡️</g-emoji> <a href="#textDocument_didClose">textDocument/didClose</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_right" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/27a1.png">➡️</g-emoji> <a href="#textDocument_didOpen">textDocument/didOpen</a></li>
+<li><g-emoji class="g-emoji" alias="arrow_right" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/27a1.png">➡️</g-emoji> <a href="#textDocument_didSave">textDocument/didSave</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_completion">textDocument/completion</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#completionItem_resolve">completionItem/resolve</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_hover">textDocument/hover</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_signatureHelp">textDocument/signatureHelp</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_references">textDocument/references</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_documentHighlight">textDocument/documentHighlight</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_documentSymbol">textDocument/documentSymbol</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_formatting">textDocument/formatting</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_rangeFormatting">textDocument/rangeFormatting</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_onTypeFormatting">textDocument/onTypeFormatting</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_definition">textDocument/definition</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_codeAction">textDocument/codeAction</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_codeLens">textDocument/codeLens</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#codeLens_resolve">codeLens/resolve</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_documentLink">textDocument/documentLink</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#documentLink_resolve">documentLink/resolve</a></li>
+<li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_rename">textDocument/rename</a></li>
+</ul>
+</body>
+</html>

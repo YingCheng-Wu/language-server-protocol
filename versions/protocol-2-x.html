@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Language Server Protocol | language-server-protocol</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="Language Server Protocol" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Defines a common protocol for language servers." />
+<meta property="og:description" content="Defines a common protocol for language servers." />
+<link rel="canonical" href="https://yingcheng-wu.github.io/language-server-protocol/versions/protocol-2-x.html" />
+<meta property="og:url" content="https://yingcheng-wu.github.io/language-server-protocol/versions/protocol-2-x.html" />
+<meta property="og:site_name" content="language-server-protocol" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Language Server Protocol" />
+<script type="application/ld+json">
+{"description":"Defines a common protocol for language servers.","url":"https://yingcheng-wu.github.io/language-server-protocol/versions/protocol-2-x.html","@type":"WebPage","headline":"Language Server Protocol","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/language-server-protocol/assets/css/style.css">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="container-lg px-3 my-5 markdown-body">
+      
+      <h1><a href="https://yingcheng-wu.github.io/language-server-protocol/">language-server-protocol</a></h1>
+      
+
+      <h1 id="language-server-protocol">Language Server Protocol</h1>
+
+<p>This document describes version 2.0 - 2.1 of the language server protocol. Changes are marked with a change or new bar on the left hand side. Below is a summary of the major changes compared to version 1.0:</p>
+
+<ul>
+  <li>Consistent use of properties on request param objects. These properties are now structured like parameters in API’s. So for example if an API takes a text document as the first parameter the corresponding parameter literal in the JSON RPC protocol now has a property <code class="language-plaintext highlighter-rouge">textDocument</code>.</li>
+  <li>Consistent support for language identifiers. This means that the language ID is passed to the server via the open notification. Further references to the text document don’t transfer this information anymore.</li>
+  <li>Support for version numbers on documents. The initial version number is sent to the server via the open notification. Document change notification do carry information about version numbers as well.</li>
+  <li>Support for request cancellation.</li>
+  <li>Interface naming: using consistent names without <code class="language-plaintext highlighter-rouge">I</code> prefix.</li>
+</ul>
+
+<p>The 1.x version of this document can be found <a href="https://github.com/Microsoft/language-server-protocol/blob/master/versions/protocol-1-x.md">here</a>.</p>
+
+<h2 id="messages-overview">Messages overview</h2>
+
+<p>General</p>
+
+<ul>
+  <li>:leftwards_arrow_with_hook: <a href="#initialize">initialize</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#shutdown">shutdown</a></li>
+  <li>:arrow_right: <a href="#exit">exit</a></li>
+  <li>:arrow_right: <a href="#cancelRequest">$/cancelRequest</a></li>
+</ul>
+
+<p>Window</p>
+
+<ul>
+  <li>:arrow_left: <a href="#window_showMessage">window/showMessage</a></li>
+  <li>:arrow_right_hook: <a href="#window_showMessageRequest">window/showMessageRequest</a></li>
+  <li>:arrow_left: <a href="#window_logMessage">window/logMessage</a></li>
+  <li>:arrow_left: <a href="#telemetry_event">telemetry/event</a></li>
+</ul>
+
+<p>Workspace</p>
+
+<ul>
+  <li>:arrow_right: <a href="#workspace_didChangeConfiguration">workspace/didChangeConfiguration</a></li>
+  <li>:arrow_right: <a href="#workspace_didChangeWatchedFiles">workspace/didChangeWatchedFiles</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#workspace_symbol">workspace/symbol</a></li>
+</ul>
+
+<p>Document</p>
+
+<ul>
+  <li>:arrow_left: <a href="#textDocument_publishDiagnostics">textDocument/publishDiagnostics</a></li>
+  <li>:arrow_right: <a href="#textDocument_didChange">textDocument/didChange</a></li>
+  <li>:arrow_right: <a href="#textDocument_didClose">textDocument/didClose</a></li>
+  <li>:arrow_right: <a href="#textDocument_didOpen">textDocument/didOpen</a></li>
+  <li>:arrow_right: <a href="#textDocument_didSave">textDocument/didSave</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_completion">textDocument/completion</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#completionItem_resolve">completionItem/resolve</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_hover">textDocument/hover</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_signatureHelp">textDocument/signatureHelp</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_references">textDocument/references</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_documentHighlight">textDocument/documentHighlight</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_documentSymbol">textDocument/documentSymbol</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_formatting">textDocument/formatting</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_rangeFormatting">textDocument/rangeFormatting</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_onTypeFormatting">textDocument/onTypeFormatting</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_definition">textDocument/definition</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_codeAction">textDocument/codeAction</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_codeLens">textDocument/codeLens</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#codeLens_resolve">codeLens/resolve</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_documentLink">textDocument/documentLink</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#documentLink_resolve">documentLink/resolve</a></li>
+  <li>:leftwards_arrow_with_hook: <a href="#textDocument_rename">textDocument/rename</a></li>
+</ul>
+
+<h2 id="base-protocol">Base Protocol</h2>
+
+<p>The base protocol consists of a header and a content part (comparable to HTTP). The header and content part are
+separated by a ‘\r\n’.</p>
+
+<h3 id="header-part">Header Part</h3>
+
+<p>The header part consists of header fields. Each header field is comprised of a name and a value,
+separated by ‘: ‘ (a colon and a space).
+Each header field is terminated by ‘\r\n’. 
+Considering the last header field and the overall header itself are each terminated with ‘\r\n’,
+and that at least one header is mandatory, this means that two ‘\r\n’ sequences always 
+immediately precede the content part of a message.</p>
+
+<p>Currently the following header fields are supported:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">Header Field Name</th>
+      <th style="text-align: left">Value Type</th>
+      <th style="text-align: left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">Content-Length</td>
+      <td style="text-align: left">number</td>
+      <td style="text-align: left">The length of the content part in bytes. This header is required.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content-Type</td>
+      <td style="text-align: left">string</td>
+      <td style="text-align: left">The mime type of the content part. Defaults to application/vscode-jsonrpc; charset=utf8</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The header part is encoded using the ‘ascii’ encoding. This includes the ‘\r\n’ separating the header and content part.</p>
+
+<h3 id="content-part">Content Part</h3>
+
+<p>Contains the actual content of the message. The content part of a message uses <a href="http://www.jsonrpc.org/">JSON-RPC</a> to describe requests, responses and notifications. The content part is encoded using the charset provided in the Content-Type field. It defaults to ‘utf8’, which is the only encoding supported right now.</p>
+
+<h3 id="example">Example:</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Content-Length: ...\r\n
+\r\n
+{
+	"jsonrpc": "2.0",
+	"id": 1,
+	"method": "textDocument/didOpen", 
+	"params": {
+		...
+	}
+}
+</code></pre></div></div>
+<h3 id="base-protocol-json-structures">Base Protocol JSON structures</h3>
+
+<p>The following TypeScript definitions describe the base <a href="http://www.jsonrpc.org/specification">JSON-RPC protocol</a>:</p>
+
+<h4 id="abstract-message">Abstract Message</h4>
+
+<p>A general message as defined by JSON-RPC. The language server protocol always uses “2.0” as the jsonrpc version.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">Message</span> <span class="p">{</span>
+	<span class="nl">jsonrpc</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<h4 id="requestmessage">RequestMessage</h4>
+
+<p>A request message to describe a request between the client and the server. Every processed request must send a response back to the sender of the request.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">RequestMessage</span> <span class="kd">extends</span> <span class="nx">Message</span> <span class="p">{</span>
+
+	<span class="cm">/**
+	 * The request id.
+	 */</span>
+	<span class="nl">id</span><span class="p">:</span> <span class="kr">number</span> <span class="o">|</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The method to be invoked.
+	 */</span>
+	<span class="nl">method</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The method's params.
+	 */</span>
+	<span class="nl">params</span><span class="p">?:</span> <span class="kr">any</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="response-message">Response Message</h4>
+
+<p>Response Message sent as a result of a request.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">ResponseMessage</span> <span class="kd">extends</span> <span class="nx">Message</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The request id.
+	 */</span>
+	<span class="nl">id</span><span class="p">:</span> <span class="kr">number</span> <span class="o">|</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The result of a request. This can be omitted in
+	 * the case of an error.
+	 */</span>
+	<span class="nl">result</span><span class="p">?:</span> <span class="kr">any</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The error object in case a request fails.
+	 */</span>
+	<span class="nl">error</span><span class="p">?:</span> <span class="nx">ResponseError</span><span class="o">&lt;</span><span class="kr">any</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kr">interface</span> <span class="nx">ResponseError</span><span class="o">&lt;</span><span class="nx">D</span><span class="o">&gt;</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * A number indicating the error type that occurred.
+	 */</span>
+	<span class="na">code</span><span class="p">:</span> <span class="kr">number</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * A string providing a short description of the error.
+	 */</span>
+	<span class="nl">message</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * A Primitive or Structured value that contains additional
+	 * information about the error. Can be omitted.
+	 */</span>
+	<span class="nl">data</span><span class="p">?:</span> <span class="nx">D</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="k">namespace</span> <span class="nx">ErrorCodes</span> <span class="p">{</span>
+	<span class="k">export</span> <span class="kd">const</span> <span class="nx">ParseError</span><span class="p">:</span> <span class="kr">number</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32700</span><span class="p">;</span>
+	<span class="k">export</span> <span class="kd">const</span> <span class="nx">InvalidRequest</span><span class="p">:</span> <span class="kr">number</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32600</span><span class="p">;</span>
+	<span class="k">export</span> <span class="kd">const</span> <span class="nx">MethodNotFound</span><span class="p">:</span> <span class="kr">number</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32601</span><span class="p">;</span>
+	<span class="k">export</span> <span class="kd">const</span> <span class="nx">InvalidParams</span><span class="p">:</span> <span class="kr">number</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32602</span><span class="p">;</span>
+	<span class="k">export</span> <span class="kd">const</span> <span class="nx">InternalError</span><span class="p">:</span> <span class="kr">number</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32603</span><span class="p">;</span>
+	<span class="k">export</span> <span class="kd">const</span> <span class="nx">serverErrorStart</span><span class="p">:</span> <span class="kr">number</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32099</span><span class="p">;</span>
+	<span class="k">export</span> <span class="kd">const</span> <span class="nx">serverErrorEnd</span><span class="p">:</span> <span class="kr">number</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32000</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<h4 id="notification-message">Notification Message</h4>
+
+<p>A notification message. A processed notification message must not send a response back. They work like events.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">NotificationMessage</span> <span class="kd">extends</span> <span class="nx">Message</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The method to be invoked.
+	 */</span>
+	<span class="nl">method</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The notification's params.
+	 */</span>
+	<span class="nl">params</span><span class="p">?:</span> <span class="kr">any</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="-cancellation-support"><a name="cancelRequest"></a> Cancellation Support</h4>
+
+<blockquote>
+  <p><strong>New:</strong> The base protocol now offers support for request cancellation. To cancel a request, a notification message with the following properties is sent:</p>
+</blockquote>
+
+<p><em>Notification</em>:</p>
+<ul>
+  <li>method: ‘$/cancelRequest’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">CancelParams</code> defined as follows:
+```typescript
+interface CancelParams {
+  /**
+    <ul>
+      <li>The request id to cancel.
+   */
+  id: number | string;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p>A request that got canceled still needs to return from the server and send a response back. It can not be left open / hanging. This is in line with the JSON RPC protocol that requires that every request sends a response back. In addition it allows for returning partial results on cancel.</p>
+
+<h2 id="language-server-protocol-1">Language Server Protocol</h2>
+
+<p>The language server protocol defines a set of JSON-RPC request, response and notification messages which are exchanged using the above base protocol. This section starts describing the basic JSON structures used in the protocol. The document uses TypeScript interfaces to describe these. Based on the basic JSON structures, the actual requests with their responses and the notifications are described.</p>
+
+<p>The protocol currently assumes that one server serves one tool. There is currently no support in the protocol to share one server between different tools. Such a sharing would require additional protocol to either lock a document to support concurrent editing.</p>
+
+<h3 id="basic-json-structures">Basic JSON Structures</h3>
+
+<h4 id="uri">URI</h4>
+
+<p>URI’s are transferred as strings. The URI’s format is defined in <a href="http://tools.ietf.org/html/rfc3986">http://tools.ietf.org/html/rfc3986</a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  foo://example.com:8042/over/there?name=ferret#nose
+  \_/   \______________/\_________/ \_________/ \__/
+   |           |            |            |        |
+scheme     authority       path        query   fragment
+   |   _____________________|__
+  / \ /                        \
+  urn:example:animal:ferret:nose
+</code></pre></div></div>
+
+<p>We also maintain a node module to parse a string into <code class="language-plaintext highlighter-rouge">scheme</code>, <code class="language-plaintext highlighter-rouge">authority</code>, <code class="language-plaintext highlighter-rouge">path</code>, <code class="language-plaintext highlighter-rouge">query</code>, and <code class="language-plaintext highlighter-rouge">fragment</code> URI components. The GitHub repository is <a href="https://github.com/Microsoft/vscode-uri">https://github.com/Microsoft/vscode-uri</a> the npm module is <a href="https://www.npmjs.com/package/vscode-uri">https://www.npmjs.com/package/vscode-uri</a>.</p>
+
+<h4 id="position">Position</h4>
+
+<p>Position in a text document expressed as zero-based line and character offset. A position is between two characters like an ‘insert’ cursor in a editor.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">Position</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * Line position in a document (zero-based).
+	 */</span>
+	<span class="nl">line</span><span class="p">:</span> <span class="kr">number</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * Character offset on a line in a document (zero-based).
+	 */</span>
+	<span class="nl">character</span><span class="p">:</span> <span class="kr">number</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<h4 id="range">Range</h4>
+
+<p>A range in a text document expressed as (zero-based) start and end positions. A range is comparable to a selection in an editor. Therefore the end position is exclusive.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">Range</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The range's start position.
+	 */</span>
+	<span class="nl">start</span><span class="p">:</span> <span class="nx">Position</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The range's end position.
+	 */</span>
+	<span class="nl">end</span><span class="p">:</span> <span class="nx">Position</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="location">Location</h4>
+
+<p>Represents a location inside a resource, such as a line inside a text file.</p>
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">Location</span> <span class="p">{</span>
+	<span class="nl">uri</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+	<span class="nl">range</span><span class="p">:</span> <span class="nx">Range</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="diagnostic">Diagnostic</h4>
+
+<p>Represents a diagnostic, such as a compiler error or warning. Diagnostic objects are only valid in the scope of a resource.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">Diagnostic</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The range at which the message applies.
+	 */</span>
+	<span class="nl">range</span><span class="p">:</span> <span class="nx">Range</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The diagnostic's severity. Can be omitted. If omitted it is up to the
+	 * client to interpret diagnostics as error, warning, info or hint.
+	 */</span>
+	<span class="nl">severity</span><span class="p">?:</span> <span class="kr">number</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The diagnostic's code. Can be omitted.
+	 */</span>
+	<span class="nl">code</span><span class="p">?:</span> <span class="kr">number</span> <span class="o">|</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * A human-readable string describing the source of this
+	 * diagnostic, e.g. 'typescript' or 'super lint'.
+	 */</span>
+	<span class="nl">source</span><span class="p">?:</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The diagnostic's message.
+	 */</span>
+	<span class="nl">message</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The protocol currently supports the following diagnostic severities:</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">enum</span> <span class="nx">DiagnosticSeverity</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * Reports an error.
+	 */</span>
+	<span class="nb">Error</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+	<span class="cm">/**
+	 * Reports a warning.
+	 */</span>
+	<span class="nx">Warning</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+	<span class="cm">/**
+	 * Reports an information.
+	 */</span>
+	<span class="nx">Information</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+	<span class="cm">/**
+	 * Reports a hint.
+	 */</span>
+	<span class="nx">Hint</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="command">Command</h4>
+
+<p>Represents a reference to a command. Provides a title which will be used to represent a command in the UI. Commands are identified using a string identifier and the protocol currently doesn’t specify a set of well known commands. So executing a command requires some tool extension code.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">Command</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * Title of the command, like `save`.
+	 */</span>
+	<span class="nl">title</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+	<span class="cm">/**
+	 * The identifier of the actual command handler.
+	 */</span>
+	<span class="nl">command</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+	<span class="cm">/**
+	 * Arguments that the command handler should be
+	 * invoked with.
+	 */</span>
+	<span class="nl">arguments</span><span class="p">?:</span> <span class="kr">any</span><span class="p">[];</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="textedit">TextEdit</h4>
+
+<p>A textual edit applicable to a text document.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">TextEdit</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The range of the text document to be manipulated. To insert
+	 * text into a document create a range where start === end.
+	 */</span>
+	<span class="nl">range</span><span class="p">:</span> <span class="nx">Range</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The string to be inserted. For delete operations use an
+	 * empty string.
+	 */</span>
+	<span class="nl">newText</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="textedit-1">TextEdit[]</h4>
+
+<p>Complex text manipulations are described with an array of <code class="language-plaintext highlighter-rouge">TextEdit</code>’s, representing a single change to the document.</p>
+
+<p>All text edits ranges refer to positions in the original document. Text edits ranges must never overlap, that means no part of the original document must be manipulated by more than one edit. However, it is possible that multiple edits have the same start position: multiple inserts, or any number of inserts followed by a single remove or replace edit. If multiple inserts have the same position, the order in the array defines the order in which the inserted strings appear in the resulting text.</p>
+
+<h4 id="workspaceedit">WorkspaceEdit</h4>
+
+<p>A workspace edit represents changes to many resources managed in the workspace.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">WorkspaceEdit</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * Holds changes to existing resources.
+	 */</span>
+	<span class="nl">changes</span><span class="p">:</span> <span class="p">{</span> <span class="p">[</span><span class="na">uri</span><span class="p">:</span> <span class="kr">string</span><span class="p">]:</span> <span class="nx">TextEdit</span><span class="p">[];</span> <span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="textdocumentidentifier">TextDocumentIdentifier</h4>
+
+<p>Text documents are identified using a URI. On the protocol level, URIs are passed as strings. The corresponding JSON structure looks like this:</p>
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">TextDocumentIdentifier</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The text document's URI.
+	 */</span>
+	<span class="nl">uri</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="textdocumentitem">TextDocumentItem</h4>
+
+<blockquote>
+  <p><strong>New:</strong> An item to transfer a text document from the client to the server.</p>
+</blockquote>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">TextDocumentItem</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The text document's URI.
+	 */</span>
+	<span class="nl">uri</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The text document's language identifier.
+	 */</span>
+	<span class="nl">languageId</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The version number of this document (it will strictly increase after each
+	 * change, including undo/redo).
+	 */</span>
+	<span class="nl">version</span><span class="p">:</span> <span class="kr">number</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The content of the opened text document.
+	 */</span>
+	<span class="nl">text</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="versionedtextdocumentidentifier">VersionedTextDocumentIdentifier</h4>
+
+<blockquote>
+  <p><strong>New:</strong> An identifier to denote a specific version of a text document.</p>
+</blockquote>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">VersionedTextDocumentIdentifier</span> <span class="kd">extends</span> <span class="nx">TextDocumentIdentifier</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The version number of this document.
+	 */</span>
+	<span class="nl">version</span><span class="p">:</span> <span class="kr">number</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="textdocumentpositionparams">TextDocumentPositionParams</h4>
+
+<blockquote>
+  <p><strong>Changed:</strong> Was <code class="language-plaintext highlighter-rouge">TextDocumentPosition</code> in 1.0 with inlined parameters</p>
+</blockquote>
+
+<p>A parameter literal used in requests to pass a text document and a position inside that document.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">TextDocumentPositionParams</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The text document.
+	 */</span>
+	<span class="nl">textDocument</span><span class="p">:</span> <span class="nx">TextDocumentIdentifier</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The position inside the text document.
+	 */</span>
+	<span class="nl">position</span><span class="p">:</span> <span class="nx">Position</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="actual-protocol">Actual Protocol</h3>
+
+<p>This section documents the actual language server protocol. It uses the following format:</p>
+
+<ul>
+  <li>a header describing the request</li>
+  <li>a <em>Request</em> section describing the format of the request sent. The method is a string identifying the request the params are documented using a TypeScript interface</li>
+  <li>a <em>Response</em> section describing the format of the response. The result item describes the returned data in case of a success. The error.data describes the returned data in case of an error. Please remember that in case of a failure the response already contains an error.code and an error.message field. These fields are only specified if the protocol forces the use of certain error codes or messages. In cases where the server can decide on these values freely they aren’t listed here.</li>
+</ul>
+
+<h4 id="initialize-request"><a name="initialize"></a>Initialize Request</h4>
+
+<p>The initialize request is sent as the first request from the client to the server. If the server receives request or notification before the <code class="language-plaintext highlighter-rouge">initialize</code> request it should act as follows:</p>
+
+<ul>
+  <li>for a request the respond should be errored with <code class="language-plaintext highlighter-rouge">code: -32001</code>. The message can be picked by the server.</li>
+  <li>notifications should be dropped.</li>
+</ul>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘initialize’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">InitializeParams</code> defined as follows:
+```typescript
+interface InitializeParams {
+  /**
+    <ul>
+      <li>The process Id of the parent process that started</li>
+      <li>the server. Is null if the process has not been started by another process.</li>
+      <li>If the parent process is not alive then the server should exit (see exit notification) its process.
+   */
+  processId?: number;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The rootPath of the workspace. Is null</li>
+      <li>if no folder is open.
+   */
+  rootPath?: string;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>User provided initialization options.
+   */
+  initializationOptions?: any;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The capabilities provided by the client (editor)
+   */
+  capabilities: ClientCapabilities;
+}
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Where `ClientCapabilities` are currently empty:
+```typescript
+interface ClientCapabilities {
+}
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">InitializeResult</code> defined as follows:
+```typescript
+interface InitializeResult {
+  /**
+    <ul>
+      <li>The capabilities the language server provides.
+   */
+  capabilities: ServerCapabilities;
+}
+```</li>
+    </ul>
+  </li>
+  <li>error.data:
+```typescript
+interface InitializeError {
+  /**
+    <ul>
+      <li>Indicates whether the client should retry to send the</li>
+      <li>initialize request after showing the message provided</li>
+      <li>in the ResponseError.
+   */
+  retry: boolean;
+}
+<code class="language-plaintext highlighter-rouge">
+The server can signal the following capabilities:
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>Defines how the host (editor) should sync document changes to the language server.
+ */
+enum TextDocumentSyncKind {
+ /**
+    <ul>
+      <li>Documents should not be synced at all.
+  */
+ None = 0,
+ /**</li>
+      <li>Documents are synced by always sending the full content of the document.
+  */
+ Full = 1,
+ /**</li>
+      <li>Documents are synced by sending the full content on open. After that only incremental</li>
+      <li>updates to the document are sent.
+  */
+ Incremental = 2
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>Completion options.
+ */
+interface CompletionOptions {
+ /**
+    <ul>
+      <li>The server provides support to resolve additional information for a completion item.
+  */
+ resolveProvider?: boolean;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The characters that trigger completion automatically.
+  */
+ triggerCharacters?: string[];
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>Signature help options.
+ */
+interface SignatureHelpOptions {
+ /**
+    <ul>
+      <li>The characters that trigger signature help automatically.
+  */
+ triggerCharacters?: string[];
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>Code Lens options.
+ */
+interface CodeLensOptions {
+ /**
+    <ul>
+      <li>Code lens has a resolve provider as well.
+  */
+ resolveProvider?: boolean;
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>Format document on type options
+ */
+interface DocumentOnTypeFormattingOptions {
+ /**
+    <ul>
+      <li>A character on which formatting should be triggered, like <code class="language-plaintext highlighter-rouge">}</code>.
+  */
+ firstTriggerCharacter: string;
+ /**</li>
+      <li>More trigger characters.
+  */
+ moreTriggerCharacter?: string[]
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+interface ServerCapabilities {
+ /**</li>
+      <li>Defines how text documents are synced.
+  */
+ textDocumentSync?: number;
+ /**</li>
+      <li>The server provides hover support.
+  */
+ hoverProvider?: boolean;
+ /**</li>
+      <li>The server provides completion support.
+  */
+ completionProvider?: CompletionOptions;
+ /**</li>
+      <li>The server provides signature help support.
+  */
+ signatureHelpProvider?: SignatureHelpOptions;
+ /**</li>
+      <li>The server provides goto definition support.
+  */
+ definitionProvider?: boolean;
+ /**</li>
+      <li>The server provides find references support.
+  */
+ referencesProvider?: boolean;
+ /**</li>
+      <li>The server provides document highlight support.
+  */
+ documentHighlightProvider?: boolean;
+ /**</li>
+      <li>The server provides document symbol support.
+  */
+ documentSymbolProvider?: boolean;
+ /**</li>
+      <li>The server provides workspace symbol support.
+  */
+ workspaceSymbolProvider?: boolean;
+ /**</li>
+      <li>The server provides code actions.
+  */
+ codeActionProvider?: boolean;
+ /**</li>
+      <li>The server provides code lens.
+  */
+ codeLensProvider?: CodeLensOptions;
+ /**</li>
+      <li>The server provides document formatting.
+  */
+ documentFormattingProvider?: boolean;
+ /**</li>
+      <li>The server provides document range formatting.
+  */
+ documentRangeFormattingProvider?: boolean;
+ /**</li>
+      <li>The server provides document formatting on typing.
+  */
+ documentOnTypeFormattingProvider?: DocumentOnTypeFormattingOptions;
+ /**</li>
+      <li>The server provides rename support.
+  */
+ renameProvider?: boolean
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="shutdown-request"><a name="shutdown"></a>Shutdown Request</h4>
+
+<p>The shutdown request is sent from the client to the server. It asks the server to shut down, but to not exit (otherwise the response might not be delivered correctly to the client). There is a separate exit notification that asks the server to exit.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘shutdown’</li>
+  <li>params: undefined</li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: undefined</li>
+  <li>error: code and message set in case an exception happens during shutdown request.</li>
+</ul>
+
+<h4 id="exit-notification"><a name="exit"></a>Exit Notification</h4>
+
+<p>A notification to ask the server to exit its process.
+The server should exit with <code class="language-plaintext highlighter-rouge">success</code> code 0 if the shutdown request has been received before; otherwise with <code class="language-plaintext highlighter-rouge">error</code> code 1.</p>
+
+<p><em>Notification</em></p>
+<ul>
+  <li>method: ‘exit’</li>
+  <li>params: undefined</li>
+</ul>
+
+<h4 id="showmessage-notification"><a name="window_showMessage"></a>ShowMessage Notification</h4>
+
+<p>The show message notification is sent from a server to a client to ask the client to display a particular message in the user interface.</p>
+
+<p><em>Notification</em>:</p>
+<ul>
+  <li>method: ‘window/showMessage’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">ShowMessageParams</code> defined as follows:
+```typescript
+interface ShowMessageParams {
+  /**
+    <ul>
+      <li>The message type. See {@link MessageType}.
+   */
+  type: number;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The actual message.
+   */
+  message: string;
+}
+<code class="language-plaintext highlighter-rouge">
+Where the type is defined as follows:
+</code>typescript
+enum MessageType {
+  /**</li>
+      <li>An error message.
+   */
+  Error = 1,
+  /**</li>
+      <li>A warning message.
+   */
+  Warning = 2,
+  /**</li>
+      <li>An information message.
+   */
+  Info = 3,
+  /**</li>
+      <li>A log message.
+   */
+  Log = 4
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="showmessage-request"><a name="window_showMessageRequest"></a>ShowMessage Request</h4>
+
+<blockquote>
+  <p><strong>New:</strong> The show message request is sent from a server to a client to ask the client to display a particular message in the user interface. In addition to the show message notification the request allows to pass actions and to wait for an answer from the client.</p>
+</blockquote>
+
+<p><em>Request</em>:</p>
+<ul>
+  <li>method: ‘window/showMessageRequest’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">ShowMessageRequestParams</code> defined as follows:</li>
+</ul>
+
+<p><em>Response</em>:</p>
+<ul>
+  <li>result: the selected <code class="language-plaintext highlighter-rouge">MessageActionItem</code></li>
+  <li>error: code and message set in case an exception happens during showing a message.</li>
+</ul>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">ShowMessageRequestParams</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * The message type. See {@link MessageType}
+	 */</span>
+	<span class="nl">type</span><span class="p">:</span> <span class="kr">number</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The actual message
+	 */</span>
+	<span class="nl">message</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+
+	<span class="cm">/**
+	 * The message action items to present.
+	 */</span>
+	<span class="nl">actions</span><span class="p">?:</span> <span class="nx">MessageActionItem</span><span class="p">[];</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>Where the <code class="language-plaintext highlighter-rouge">MessageActionItem</code> is defined as follows:</p>
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">MessageActionItem</span> <span class="p">{</span>
+	<span class="cm">/**
+	 * A short title like 'Retry', 'Open Log' etc.
+	 */</span>
+	<span class="nl">title</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="logmessage-notification"><a name="window_logMessage"></a>LogMessage Notification</h4>
+
+<p>The log message notification is sent from the server to the client to ask the client to log a particular message.</p>
+
+<p><em>Notification</em>:</p>
+<ul>
+  <li>method: ‘window/logMessage’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">LogMessageParams</code> defined as follows:
+```typescript
+interface LogMessageParams {
+  /**
+    <ul>
+      <li>The message type. See {@link MessageType}
+   */
+  type: number;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The actual message
+   */
+  message: string;
+}
+```
+Where type is defined as above.</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="telemetry-notification"><a name="telemetry_event"></a>Telemetry Notification</h4>
+
+<blockquote>
+  <p><strong>New:</strong> The telemetry notification is sent from the server to the client to ask the client to log a telemetry event.</p>
+</blockquote>
+
+<p><em>Notification</em>:</p>
+<ul>
+  <li>method: ‘telemetry/event’</li>
+  <li>params: ‘any’</li>
+</ul>
+
+<h4 id="didchangeconfiguration-notification"><a name="workspace_didChangeConfiguration"></a>DidChangeConfiguration Notification</h4>
+
+<p>A notification sent from the client to the server to signal the change of configuration settings.</p>
+
+<p><em>Notification</em>:</p>
+<ul>
+  <li>method: ‘workspace/didChangeConfiguration’,</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DidChangeConfigurationParams</code> defined as follows:
+```typescript
+interface DidChangeConfigurationParams {
+  /**
+    <ul>
+      <li>The actual changed settings
+   */
+  settings: any;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="didopentextdocument-notification"><a name="textDocument_didOpen"></a>DidOpenTextDocument Notification</h4>
+
+<p>The document open notification is sent from the client to the server to signal newly opened text documents. The document’s truth is now managed by the client and the server must not try to read the document’s truth using the document’s uri.</p>
+
+<p><em>Notification</em>:</p>
+<ul>
+  <li>method: ‘textDocument/didOpen’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DidOpenTextDocumentParams</code> defined as follows:
+```typescript
+interface DidOpenTextDocumentParams {
+  /**
+    <ul>
+      <li>The document that was opened.
+   */
+  textDocument: TextDocumentItem;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="didchangetextdocument-notification"><a name="textDocument_didChange"></a>DidChangeTextDocument Notification</h4>
+
+<blockquote>
+  <p><strong>Changed:</strong> The document change notification is sent from the client to the server to signal changes to a text document. In 2.0 the shape of the params has changed to include proper version numbers and language ids.</p>
+</blockquote>
+
+<p><em>Notification</em>:</p>
+<ul>
+  <li>method: ‘textDocument/didChange’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DidChangeTextDocumentParams</code> defined as follows:
+```typescript
+interface DidChangeTextDocumentParams {
+  /**
+    <ul>
+      <li>The document that did change. The version number points</li>
+      <li>to the version after all provided content changes have</li>
+      <li>been applied.
+   */
+  textDocument: VersionedTextDocumentIdentifier;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The actual content changes.
+   */
+  contentChanges: TextDocumentContentChangeEvent[];
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>An event describing a change to a text document. If range and rangeLength are omitted</li>
+  <li>the new text is considered to be the full content of the document.
+ */
+interface TextDocumentContentChangeEvent {
+ /**
+    <ul>
+      <li>The range of the document that changed.
+  */
+ range?: Range;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The length of the range that got replaced.
+  */
+ rangeLength?: number;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The new text of the document.
+  */
+ text: string;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="didclosetextdocument-notification"><a name="textDocument_didClose"></a>DidCloseTextDocument Notification</h4>
+
+<p>The document close notification is sent from the client to the server when the document got closed in the client. The document’s truth now exists where the document’s uri points to (e.g. if the document’s uri is a file uri the truth now exists on disk).</p>
+
+<blockquote>
+  <p><strong>Changed:</strong> In 2.0 the params are of type <code class="language-plaintext highlighter-rouge">DidCloseTextDocumentParams</code> which contains a reference to a text document.</p>
+</blockquote>
+
+<p><em>Notification</em>:</p>
+<ul>
+  <li>method: ‘textDocument/didClose’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DidCloseTextDocumentParams</code> defined as follows:
+```typescript
+interface DidCloseTextDocumentParams {
+  /**
+    <ul>
+      <li>The document that was closed.
+   */
+  textDocument: TextDocumentIdentifier;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="didsavetextdocument-notification"><a name="textDocument_didSave"></a>DidSaveTextDocument Notification</h4>
+
+<blockquote>
+  <p><strong>New:</strong> The document save notification is sent from the client to the server when the document was saved in the client.</p>
+</blockquote>
+
+<ul>
+  <li>method: ‘textDocument/didSave’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DidSaveTextDocumentParams</code> defined as follows:
+```typescript
+interface DidSaveTextDocumentParams {
+  /**
+    <ul>
+      <li>The document that was saved.
+   */
+  textDocument: TextDocumentIdentifier;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="didchangewatchedfiles-notification"><a name="workspace_didChangeWatchedFiles"></a>DidChangeWatchedFiles Notification</h4>
+
+<p>The watched files notification is sent from the client to the server when the client detects changes to files watched by the language client.</p>
+
+<p><em>Notification</em>:</p>
+<ul>
+  <li>method: ‘workspace/didChangeWatchedFiles’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DidChangeWatchedFilesParams</code> defined as follows:
+```typescript
+interface DidChangeWatchedFilesParams {
+  /**
+    <ul>
+      <li>The actual file events.
+   */
+  changes: FileEvent[];
+}
+<code class="language-plaintext highlighter-rouge">
+Where FileEvents are described as follows:
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>The file event type.
+ */
+enum FileChangeType {
+ /**
+    <ul>
+      <li>The file got created.
+  */
+ Created = 1,
+ /**</li>
+      <li>The file got changed.
+  */
+ Changed = 2,
+ /**</li>
+      <li>The file got deleted.
+  */
+ Deleted = 3
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>An event describing a file change.
+ */
+interface FileEvent {
+ /**
+    <ul>
+      <li>The file’s URI.
+  */
+ uri: string;
+ /**</li>
+      <li>The change type.
+  */
+ type: number;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="publishdiagnostics-notification"><a name="textDocument_publishDiagnostics"></a>PublishDiagnostics Notification</h4>
+
+<p>Diagnostics notification are sent from the server to the client to signal results of validation runs.</p>
+
+<p><em>Notification</em></p>
+<ul>
+  <li>method: ‘textDocument/publishDiagnostics’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">PublishDiagnosticsParams</code> defined as follows:
+```typescript
+interface PublishDiagnosticsParams {
+  /**
+    <ul>
+      <li>The URI for which diagnostic information is reported.
+   */
+  uri: string;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>An array of diagnostic information items.
+   */
+  diagnostics: Diagnostic[];
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="completion-request"><a name="textDocument_completion"></a>Completion Request</h4>
+
+<p>The Completion request is sent from the client to the server to compute completion items at a given cursor position. Completion items are presented in the <a href="https://code.visualstudio.com/docs/editor/editingevolved#_intellisense">IntelliSense</a> user interface. If computing full completion items is expensive, servers can additionally provide a handler for the completion item resolve request (‘completionItem/resolve’). This request is sent when a completion item is selected in the user interface. A typically use case is for example: the ‘textDocument/completion’ request doesn’t fill in the <code class="language-plaintext highlighter-rouge">documentation</code> property for returned completion items since it is expensive to compute. When the item is selected in the user interface then a ‘completionItem/resolve’ request is sent with the selected completion item as a param. The returned completion item should have the documentation property filled in.</p>
+
+<blockquote>
+  <p><strong>Changed:</strong> In 2.0 the request uses <code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code> with a proper <code class="language-plaintext highlighter-rouge">textDocument</code> and <code class="language-plaintext highlighter-rouge">position</code> property. In 1.0 the uri of the referenced text document was inlined into the params object.</p>
+</blockquote>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/completion’</li>
+  <li>params: <a href="#textdocumentpositionparams"><code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code></a></li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">CompletionItem[] | CompletionList</code>
+```typescript
+/**</li>
+  <li>Represents a collection of <a href="#CompletionItem">completion items</a> to be presented</li>
+  <li>in the editor.
+ */
+interface CompletionList {
+ /**
+    <ul>
+      <li>This list it not complete. Further typing should result in recomputing</li>
+      <li>this list.
+  */
+ isIncomplete: boolean;
+ /**</li>
+      <li>The completion items.
+  */
+ items: CompletionItem[];
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+interface CompletionItem {
+ /**</li>
+      <li>The label of this completion item. By default</li>
+      <li>also the text that is inserted when selecting</li>
+      <li>this completion.
+  */
+ label: string;
+ /**</li>
+      <li>The kind of this completion item. Based of the kind</li>
+      <li>an icon is chosen by the editor.
+  */
+ kind?: number;
+ /**</li>
+      <li>A human-readable string with additional information</li>
+      <li>about this item, like type or symbol information.
+  */
+ detail?: string;
+ /**</li>
+      <li>A human-readable string that represents a doc-comment.
+  */
+ documentation?: string;
+ /**</li>
+      <li>A string that should be used when comparing this item</li>
+      <li>with other items. When <code class="language-plaintext highlighter-rouge">falsy</code> the label is used.
+  */
+ sortText?: string;
+ /**</li>
+      <li>A string that should be used when filtering a set of</li>
+      <li>completion items. When <code class="language-plaintext highlighter-rouge">falsy</code> the label is used.
+  */
+ filterText?: string;
+ /**</li>
+      <li>A string that should be inserted a document when selecting</li>
+      <li>this completion. When <code class="language-plaintext highlighter-rouge">falsy</code> the label is used.
+  */
+ insertText?: string;
+ /**</li>
+      <li>An edit which is applied to a document when selecting</li>
+      <li>this completion. When an edit is provided the value of</li>
+      <li>insertText is ignored.
+  */
+ textEdit?: TextEdit;
+ /**</li>
+      <li>An optional array of additional text edits that are applied when</li>
+      <li>selecting this completion. Edits must not overlap with the main edit</li>
+      <li>nor with themselves.
+  */
+ additionalTextEdits?: TextEdit[];
+ /**</li>
+      <li>An optional command that is executed <em>after</em> inserting this completion. <em>Note</em> that</li>
+      <li>additional modifications to the current document should be described with the</li>
+      <li>additionalTextEdits-property.
+  */
+ command?: Command;
+ /**</li>
+      <li>An data entry field that is preserved on a completion item between</li>
+      <li>a completion and a completion resolve request.
+  */
+ data?: any
+}
+<code class="language-plaintext highlighter-rouge">
+Where `CompletionItemKind` is defined as follows:
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>The kind of a completion entry.
+ */
+enum CompletionItemKind {
+ Text = 1,
+ Method = 2,
+ Function = 3,
+ Constructor = 4,
+ Field = 5,
+ Variable = 6,
+ Class = 7,
+ Interface = 8,
+ Module = 9,
+ Property = 10,
+ Unit = 11,
+ Value = 12,
+ Enum = 13,
+ Keyword = 14,
+ Snippet = 15,
+ Color = 16,
+ File = 17,
+ Reference = 18
+}
+```</li>
+  <li>error: code and message set in case an exception happens during the completion request.</li>
+</ul>
+
+<h4 id="completion-item-resolve-request"><a name="completionItem_resolve"></a>Completion Item Resolve Request</h4>
+
+<p>The request is sent from the client to the server to resolve additional information for a given completion item.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘completionItem/resolve’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">CompletionItem</code></li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">CompletionItem</code></li>
+  <li>error: code and message set in case an exception happens during the completion resolve request.</li>
+</ul>
+
+<h4 id="hover-request"><a name="textDocument_hover"></a>Hover Request</h4>
+
+<p>The hover request is sent from the client to the server to request hover information at a given text document position.</p>
+
+<blockquote>
+  <p><strong>Changed:</strong> In 2.0 the request uses <code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code> with a proper <code class="language-plaintext highlighter-rouge">textDocument</code> and <code class="language-plaintext highlighter-rouge">position</code> property. In 1.0 the uri of the referenced text document was inlined into the params object.</p>
+</blockquote>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/hover’</li>
+  <li>params: <a href="#textdocumentpositionparams"><code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code></a></li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">Hover</code> defined as follows:
+```typescript
+/**</li>
+  <li>The result of a hover request.
+ */
+interface Hover {
+ /**
+    <ul>
+      <li>The hover’s content
+  */
+ contents: MarkedString | MarkedString[];</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>An optional range is a range inside a text document</li>
+      <li>that is used to visualize a hover, e.g. by changing the background color.
+  */
+ range?: Range;
+}
+<code class="language-plaintext highlighter-rouge">
+Where `MarkedString` is defined as follows:
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>The marked string is rendered:</li>
+  <li>
+    <ul>
+      <li>as markdown if it is represented as a string</li>
+    </ul>
+  </li>
+  <li>
+    <ul>
+      <li>as code block of the given language if it is represented as a pair of a language and a value
+ *</li>
+    </ul>
+  </li>
+  <li>The pair of a language and a value is an equivalent to markdown:</li>
+  <li>```${language}</li>
+  <li>${value}</li>
+  <li>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> */
+type MarkedString = string | { language: string; value: string };
+</code></pre></div>    </div>
+  </li>
+  <li>error: code and message set in case an exception happens during the hover request.</li>
+</ul>
+
+<h4 id="signature-help-request"><a name="textDocument_signatureHelp"></a>Signature Help Request</h4>
+
+<p>The signature help request is sent from the client to the server to request signature information at a given cursor position.</p>
+
+<blockquote>
+  <p><strong>Changed:</strong> In 2.0 the request uses <code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code> with proper <code class="language-plaintext highlighter-rouge">textDocument</code> and <code class="language-plaintext highlighter-rouge">position</code> properties. In 1.0 the uri of the referenced text document was inlined into the params object.</p>
+</blockquote>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/signatureHelp’</li>
+  <li>params: <a href="#textdocumentpositionparams"><code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code></a></li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">SignatureHelp</code> defined as follows:
+```typescript
+/**</li>
+  <li>Signature help represents the signature of something</li>
+  <li>callable. There can be multiple signature but only one</li>
+  <li>active and only one active parameter.
+ */
+interface SignatureHelp {
+ /**
+    <ul>
+      <li>One or more signatures.
+  */
+ signatures: SignatureInformation[];</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The active signature.
+  */
+ activeSignature?: number;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The active parameter of the active signature.
+  */
+ activeParameter?: number;
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>Represents the signature of something callable. A signature</li>
+  <li>can have a label, like a function-name, a doc-comment, and</li>
+  <li>a set of parameters.
+ */
+interface SignatureInformation {
+ /**
+    <ul>
+      <li>The label of this signature. Will be shown in</li>
+      <li>the UI.
+  */
+ label: string;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The human-readable doc-comment of this signature. Will be shown</li>
+      <li>in the UI but can be omitted.
+  */
+ documentation?: string;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The parameters of this signature.
+  */
+ parameters?: ParameterInformation[];
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>Represents a parameter of a callable-signature. A parameter can</li>
+  <li>have a label and a doc-comment.
+ */
+interface ParameterInformation {
+ /**
+    <ul>
+      <li>The label of this parameter. Will be shown in</li>
+      <li>the UI.
+  */
+ label: string;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The human-readable doc-comment of this parameter. Will be shown</li>
+      <li>in the UI but can be omitted.
+  */
+ documentation?: string;
+}
+```</li>
+    </ul>
+  </li>
+  <li>error: code and message set in case an exception happens during the signature help request.</li>
+</ul>
+
+<h4 id="goto-definition-request"><a name="textDocument_definition"></a>Goto Definition Request</h4>
+
+<p>The goto definition request is sent from the client to the server to resolve the definition location of a symbol at a given text document position.</p>
+
+<blockquote>
+  <p><strong>Changed:</strong> In 2.0 the request uses <code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code> with proper <code class="language-plaintext highlighter-rouge">textDocument</code> and <code class="language-plaintext highlighter-rouge">position</code> properties. In 1.0 the uri of the referenced text document was inlined into the params object.</p>
+</blockquote>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/definition’</li>
+  <li>params: <a href="#textdocumentpositionparams"><code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code></a></li>
+</ul>
+
+<p><em>Response</em>:</p>
+<ul>
+  <li>
+    <table>
+      <tbody>
+        <tr>
+          <td>result: <a href="#location"><code class="language-plaintext highlighter-rouge">Location</code></a></td>
+          <td><a href="#location"><code class="language-plaintext highlighter-rouge">Location</code></a>[]</td>
+        </tr>
+      </tbody>
+    </table>
+  </li>
+  <li>error: code and message set in case an exception happens during the definition request.</li>
+</ul>
+
+<h4 id="find-references-request"><a name="textDocument_references"></a>Find References Request</h4>
+
+<p>The references request is sent from the client to the server to resolve project-wide references for the symbol denoted by the given text document position.</p>
+
+<blockquote>
+  <p><strong>Changed:</strong> In 2.0 the request uses <code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code> with proper <code class="language-plaintext highlighter-rouge">textDocument</code> and <code class="language-plaintext highlighter-rouge">position</code> properties. In 1.0 the uri of the referenced text document was inlined into the params object.</p>
+</blockquote>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/references’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">ReferenceParams</code> defined as follows:
+    <div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">interface</span> <span class="nx">ReferenceParams</span> <span class="kd">extends</span> <span class="nx">TextDocumentPositionParams</span> <span class="p">{</span>
+  <span class="nl">context</span><span class="p">:</span> <span class="nx">ReferenceContext</span>
+<span class="p">}</span>
+</code></pre></div>    </div>
+    <p>```typescript
+interface ReferenceContext {
+  /**</p>
+    <ul>
+      <li>Include the declaration of the current symbol.
+   */
+  includeDeclaration: boolean;
+}
+```
+<em>Response</em>:</li>
+    </ul>
+  </li>
+  <li>result: <a href="#location"><code class="language-plaintext highlighter-rouge">Location</code></a>[]</li>
+  <li>error: code and message set in case an exception happens during the reference request.</li>
+</ul>
+
+<h4 id="document-highlights-request"><a name="textDocument_documentHighlight"></a>Document Highlights Request</h4>
+
+<p>The document highlight request is sent from the client to the server to resolve a document highlights for a given text document position.
+For programming languages this usually highlights all references to the symbol scoped to this file. However we kept ‘textDocument/documentHighlight’ 
+and ‘textDocument/references’ separate requests since the first one is allowed to be more fuzzy. Symbol matches usually have a <code class="language-plaintext highlighter-rouge">DocumentHighlightKind</code>
+of <code class="language-plaintext highlighter-rouge">Read</code> or <code class="language-plaintext highlighter-rouge">Write</code> whereas fuzzy or textual matches use <code class="language-plaintext highlighter-rouge">Text</code>as the kind.</p>
+
+<blockquote>
+  <p><strong>Changed:</strong> In 2.0 the request uses <code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code> with proper <code class="language-plaintext highlighter-rouge">textDocument</code> and <code class="language-plaintext highlighter-rouge">position</code> properties. In 1.0 the uri of the referenced text document was inlined into the params object.</p>
+</blockquote>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/documentHighlight’</li>
+  <li>params: <a href="#textdocumentpositionparams"><code class="language-plaintext highlighter-rouge">TextDocumentPositionParams</code></a></li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">DocumentHighlight</code>[] defined as follows:
+```typescript
+/**</li>
+  <li>A document highlight is a range inside a text document which deserves</li>
+  <li>special attention. Usually a document highlight is visualized by changing</li>
+  <li>the background color of its range.</li>
+  <li>*/
+interface DocumentHighlight {
+/**
+    <ul>
+      <li>The range this highlight applies to.
+ */
+range: Range;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The highlight kind, default is DocumentHighlightKind.Text.
+ */
+kind?: number;
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>A document highlight kind.
+ */
+enum DocumentHighlightKind {
+ /**
+    <ul>
+      <li>A textual occurrence.
+  */
+ Text = 1,</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>Read-access of a symbol, like reading a variable.
+  */
+ Read = 2,</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>Write-access of a symbol, like writing to a variable.
+  */
+ Write = 3
+}
+```</li>
+    </ul>
+  </li>
+  <li>error: code and message set in case an exception happens during the document highlight request.</li>
+</ul>
+
+<h4 id="document-symbols-request"><a name="textDocument_documentSymbol"></a>Document Symbols Request</h4>
+
+<p>The document symbol request is sent from the client to the server to list all symbols found in a given text document.</p>
+
+<blockquote>
+  <p><strong>Changed:</strong> In 2.0 the request uses <code class="language-plaintext highlighter-rouge">DocumentSymbolParams</code> instead of a single uri.</p>
+</blockquote>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/documentSymbol’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DocumentSymbolParams</code> defined as follows:
+```typescript
+interface DocumentSymbolParams {
+  /**
+    <ul>
+      <li>The text document.
+   */
+  textDocument: TextDocumentIdentifier;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">SymbolInformation</code>[] defined as follows:
+```typescript
+/**</li>
+  <li>Represents information about programming constructs like variables, classes,</li>
+  <li>interfaces etc.
+ */
+interface SymbolInformation {
+ /**
+    <ul>
+      <li>The name of this symbol.
+  */
+ name: string;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The kind of this symbol.
+  */
+ kind: number;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The location of this symbol.
+  */
+ location: Location;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The name of the symbol containing this symbol.
+  */
+ containerName?: string;
+}
+<code class="language-plaintext highlighter-rouge">
+Where the `kind` is defined like this:
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>A symbol kind.
+ */
+export enum SymbolKind {
+ File = 1,
+ Module = 2,
+ Namespace = 3,
+ Package = 4,
+ Class = 5,
+ Method = 6,
+ Property = 7,
+ Field = 8,
+ Constructor = 9,
+ Enum = 10,
+ Interface = 11,
+ Function = 12,
+ Variable = 13,
+ Constant = 14,
+ String = 15,
+ Number = 16,
+ Boolean = 17,
+ Array = 18,
+}
+```</li>
+  <li>error: code and message set in case an exception happens during the document symbol request.</li>
+</ul>
+
+<h4 id="workspace-symbols-request"><a name="workspace_symbol"></a>Workspace Symbols Request</h4>
+
+<p>The workspace symbol request is sent from the client to the server to list project-wide symbols matching the query string.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘workspace/symbol’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">WorkspaceSymbolParams</code> defined as follows:
+```typescript
+/**</li>
+  <li>The parameters of a Workspace Symbol Request.
+ */
+interface WorkspaceSymbolParams {
+ /**
+    <ul>
+      <li>A non-empty query string
+  */
+ query: string;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">SymbolInformation[]</code> as defined above.</li>
+  <li>error: code and message set in case an exception happens during the workspace symbol request.</li>
+</ul>
+
+<h4 id="code-action-request"><a name="textDocument_codeAction"></a>Code Action Request</h4>
+
+<p>The code action request is sent from the client to the server to compute commands for a given text document and range. The request is triggered when the user moves the cursor into a problem marker in the editor or presses the lightbulb associated with a marker.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/codeAction’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">CodeActionParams</code> defined as follows:
+```typescript
+/**</li>
+  <li>Params for the CodeActionRequest
+ */
+interface CodeActionParams {
+ /**
+    <ul>
+      <li>The document in which the command was invoked.
+  */
+ textDocument: TextDocumentIdentifier;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The range for which the command was invoked.
+  */
+ range: Range;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>Context carrying additional information.
+  */
+ context: CodeActionContext;
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>Contains additional diagnostic information about the context in which</li>
+  <li>a code action is run.
+ */
+interface CodeActionContext {
+ /**
+    <ul>
+      <li>An array of diagnostics.
+  */
+ diagnostics: Diagnostic[];
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <a href="#command"><code class="language-plaintext highlighter-rouge">Command[]</code></a> defined as follows:</li>
+  <li>error: code and message set in case an exception happens during the code action request.</li>
+</ul>
+
+<h4 id="code-lens-request"><a name="textDocument_codeLens"></a>Code Lens Request</h4>
+
+<p>The code lens request is sent from the client to the server to compute code lenses for a given text document.</p>
+
+<blockquote>
+  <p><strong>Changed:</strong> In 2.0 the request uses <code class="language-plaintext highlighter-rouge">CodeLensParams</code> instead of a single uri.</p>
+</blockquote>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/codeLens’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">CodeLensParams</code> defined as follows:
+```typescript
+interface CodeLensParams {
+  /**
+    <ul>
+      <li>The document to request code lens for.
+   */
+  textDocument: TextDocumentIdentifier;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">CodeLens[]</code> defined as follows:
+```typescript
+/**</li>
+  <li>A code lens represents a command that should be shown along with</li>
+  <li>source text, like the number of references, a way to run tests, etc.
+ *</li>
+  <li>A code lens is <em>unresolved</em> when no command is associated to it. For performance</li>
+  <li>reasons the creation of a code lens and resolving should be done in two stages.
+ */
+interface CodeLens {
+ /**
+    <ul>
+      <li>The range in which this code lens is valid. Should only span a single line.
+  */
+ range: Range;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The command this code lens represents.
+  */
+ command?: Command;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>A data entry field that is preserved on a code lens item between</li>
+      <li>a code lens and a code lens resolve request.
+  */
+ data?: any
+}
+```</li>
+    </ul>
+  </li>
+  <li>error: code and message set in case an exception happens during the code lens request.</li>
+</ul>
+
+<h4 id="code-lens-resolve-request"><a name="codeLens_resolve"></a>Code Lens Resolve Request</h4>
+
+<p>The code lens resolve request is sent from the client to the server to resolve the command for a given code lens item.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘codeLens/resolve’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">CodeLens</code></li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">CodeLens</code></li>
+  <li>error: code and message set in case an exception happens during the code lens resolve request.</li>
+</ul>
+
+<h4 id="document-link-request"><a name="textDocument_documentLink"></a>Document Link Request</h4>
+
+<p>The document links request is sent from the client to the server to request the location of links in a document.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/documentLink’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DocumentLinkParams</code>, defined as follows
+```typescript
+interface DocumentLinkParams {
+  /**
+    <ul>
+      <li>The document to provide document links for.
+   */
+  textDocument: TextDocumentIdentifier;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: An array of <code class="language-plaintext highlighter-rouge">DocumentLink</code>, or <code class="language-plaintext highlighter-rouge">null</code> or <code class="language-plaintext highlighter-rouge">undefined</code>.
+```
+/**</li>
+  <li>A document link is a range in a text document that links to an internal or external resource, like another</li>
+  <li>text document or a web site.
+ */
+interface DocumentLink {
+ /**
+    <ul>
+      <li>The range this link applies to.
+  */
+ range: Range;
+ /**</li>
+      <li>The uri this link points to.
+  */
+ target: string;
+}
+```</li>
+    </ul>
+  </li>
+  <li>error: code and message set in case an exception happens during the document link request.</li>
+</ul>
+
+<h4 id="document-link-resolve-request"><a name="documentLink_resolve"></a>Document Link Resolve Request</h4>
+
+<p>The document link resolve request is sent from the client to the server to resolve the target of a given document link.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘documentLink/resolve’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DocumentLink</code></li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <code class="language-plaintext highlighter-rouge">DocumentLink</code></li>
+  <li>error: code and message set in case an exception happens during the document link resolve request.</li>
+</ul>
+
+<h4 id="document-formatting-request"><a name="textDocument_formatting"></a>Document Formatting Request</h4>
+
+<p>The document formatting request is sent from the server to the client to format a whole document.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/formatting’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DocumentFormattingParams</code> defined as follows
+```typescript
+interface DocumentFormattingParams {
+  /**
+    <ul>
+      <li>The document to format.
+   */
+  textDocument: TextDocumentIdentifier;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The format options.
+   */
+  options: FormattingOptions;
+}
+<code class="language-plaintext highlighter-rouge">
+</code>typescript
+/**</li>
+    </ul>
+  </li>
+  <li>Value-object describing what options formatting should use.
+ */
+interface FormattingOptions {
+ /**
+    <ul>
+      <li>Size of a tab in spaces.
+  */
+ tabSize: number;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>Prefer spaces over tabs.
+  */
+ insertSpaces: boolean;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>Signature for further properties.
+  */
+ [key: string]: boolean | number | string;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <a href="#textedit"><code class="language-plaintext highlighter-rouge">TextEdit[]</code></a> describing the modification to the document to be formatted.</li>
+  <li>error: code and message set in case an exception happens during the formatting request.</li>
+</ul>
+
+<h4 id="document-range-formatting-request"><a name="textDocument_rangeFormatting"></a>Document Range Formatting Request</h4>
+
+<p>The document range formatting request is sent from the client to the server to format a given range in a document.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/rangeFormatting’,</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DocumentRangeFormattingParams</code> defined as follows
+```typescript
+interface DocumentRangeFormattingParams {
+  /**
+    <ul>
+      <li>The document to format.
+   */
+  textDocument: TextDocumentIdentifier;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The range to format
+   */
+  range: Range;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The format options
+   */
+  options: FormattingOptions;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <a href="#textedit"><code class="language-plaintext highlighter-rouge">TextEdit[]</code></a> describing the modification to the document to be formatted.</li>
+  <li>error: code and message set in case an exception happens during the range formatting request.</li>
+</ul>
+
+<h4 id="document-on-type-formatting-request"><a name="textDocument_onTypeFormatting"></a>Document on Type Formatting Request</h4>
+
+<p>The document on type formatting request is sent from the client to the server to format parts of the document during typing.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/onTypeFormatting’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">DocumentOnTypeFormattingParams</code> defined as follows
+```typescript
+interface DocumentOnTypeFormattingParams {
+  /**
+    <ul>
+      <li>The document to format.
+   */
+  textDocument: TextDocumentIdentifier;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The position at which this request was sent.
+   */
+  position: Position;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The character that has been typed.
+   */
+  ch: string;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The format options.
+   */
+  options: FormattingOptions;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <a href="#textedit"><code class="language-plaintext highlighter-rouge">TextEdit[]</code></a> describing the modification to the document.</li>
+  <li>error: code and message set in case an exception happens during the range formatting request.</li>
+</ul>
+
+<h4 id="rename-request"><a name="textDocument_rename"></a>Rename Request</h4>
+
+<p>The rename request is sent from the client to the server to perform a workspace-wide rename of a symbol.</p>
+
+<p><em>Request</em></p>
+<ul>
+  <li>method: ‘textDocument/rename’</li>
+  <li>params: <code class="language-plaintext highlighter-rouge">RenameParams</code> defined as follows
+```typescript
+interface RenameParams {
+  /**
+    <ul>
+      <li>The document to format.
+   */
+  textDocument: TextDocumentIdentifier;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The position at which this request was sent.
+   */
+  position: Position;</li>
+    </ul>
+
+    <p>/**</p>
+    <ul>
+      <li>The new name of the symbol. If the given name is not valid the</li>
+      <li>request must return a <a href="#ResponseError">ResponseError</a> with an</li>
+      <li>appropriate message set.
+   */
+  newName: string;
+}
+```</li>
+    </ul>
+  </li>
+</ul>
+
+<p><em>Response</em></p>
+<ul>
+  <li>result: <a href="#workspaceedit"><code class="language-plaintext highlighter-rouge">WorkspaceEdit</code></a> describing the modification to the workspace.</li>
+  <li>error: code and message set in case an exception happens during the rename request.</li>
+</ul>
+
+
+
+      
+      <div class="footer border-top border-gray-light mt-5 pt-3 text-right text-gray">
+        This site is open source. <a href="https://github.com/YingCheng-Wu/language-server-protocol/edit/main/versions/protocol-2-x.md">Improve this page</a>.
+      </div>
+      
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/4.1.0/anchor.min.js" integrity="sha256-lZaRhKri35AyJSypXXs4o6OPFTbTmUoltBbDCbdzegg=" crossorigin="anonymous"></script>
+    <script>anchors.add();</script>
+    
+  </body>
+</html>
