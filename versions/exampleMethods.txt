@@ -1,0 +1,2 @@
+initialize
+{"jsonrpc":"2.0","method":"initialize","id":0,"params":{"capabilities":{}}}
