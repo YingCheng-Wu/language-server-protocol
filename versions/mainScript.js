@@ -179,7 +179,7 @@ class showHintdiv {
 }
 showHintdiv.Hintdiv = new Hintdiv(hintdiv);
 fetch(RemoteURL.remoteURL + 'exampleMethods.txt').then(v => v.text()).then(values => {
-    const inputArray = trim(values).split('\r\n'), inputArrayLength = inputArray.length;
+    const inputArray = trim(values).split('\n'), inputArrayLength = inputArray.length;
     for (let index = 0; index < inputArrayLength; index += 2) {
         DefaultValues.defaultValues[JSON.parse('"' + inputArray[index].replace(/"/g, '\\"') + '"')] = JSON.parse('"' + inputArray[index + 1].replace(/"/g, '\\"') + '"');
     }
