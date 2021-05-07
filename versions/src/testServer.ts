@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs'; 
 import * as child_process from 'child_process'; 
 
+process.chdir('../language-server-protocol/versions'); 
 const cp = child_process.spawn('/Program Files/LLVM/bin/clangd.exe'); 
 cp.stdout.setEncoding('utf-8'); 
 cp.stderr.setEncoding('utf-8'); 
@@ -38,13 +39,14 @@ http.createServer((message, response)=>{
           cp.stderr.on('data', stderrDataCallback); 
           message.pipe(cp.stdin, {end: false}); message.on('data', data=>{ console.log(data.toString()); }); 
         } else if (apiUrl=='saveDefaultValues') {
-          const writable = fs.createWriteStream('exampleMethods.json'); 
+          const writable = fs.createWriteStream('exampleMethods.txt'); 
           message.pipe(writable); 
           writable.on('error', notFound).on('close', ()=>{ response.end(); }); 
         } else { notFound(); } 
       } else { notFound(); } 
     } else { 
-      const readable = fs.createReadStream('../language-server-protocol/versions'+url); 
+      const readable = fs.createReadStream('.'+url); 
+      if (url.endsWith('.js')) { response.setHeader('Content-Type', 'application/javascript'); } else if (url.endsWith('.css')) { response.setHeader('Content-Type', 'text/css'); } 
       readable.on('error', notFound); 
       readable.pipe(response); 
     } } 

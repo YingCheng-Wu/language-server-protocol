@@ -1,1 +1,1 @@
-{"scripts": {"start": "tsc --target ES2019 mainScript.ts --outFile ../mainScript.js"}}
+{"scripts": {"start": "tsc --target ES2019 mainScript.ts --outDir .."}}

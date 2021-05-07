@@ -22,6 +22,7 @@
 <style class="anchorjs"></style>
 <link rel="stylesheet" href="https://yingcheng-wu.github.io/language-server-protocol/assets/css/style.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs2015.min.css" integrity="sha512-w8aclkBlN3Ha08SMwFKXFJqhSUx2qlvTBFLLelF8sm4xQnlg64qmGB/A6pBIKy0W8Bo51yDMDtQiPLNRq1WMcQ==" crossorigin="anonymous" />
 </head>
 <body class="px-3 my-5 markdown-body" spellcheck="false">
 <div id="tableofcontents">
@@ -72,20 +73,29 @@
 <li><g-emoji class="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩️</g-emoji> <a href="#textDocument_rename">textDocument/rename</a></li>
 </ul>
 </div>
-<dialog id="entry"><input id="contentlength" style="border-bottom: 0;border-radius: 4px 4px 0 0;font-size: 18px;"><br><textarea id="sampletextarea" style="border-top: 0px;border-radius: 0px 0px 4px 4px;margin: 0px;resize: vertical;"></textarea><br><div><button id="startrequest" style="float: right;">🚀</button><div id="invalidjson" style="color: lightcoral;"></div><div id="spinnerdiv" style="border: 8px solid;border-color: grey grey dimgrey;border-radius: 30px;height: 60px;margin: 4px;width: 60px;" hidden=""></div></div><textarea id="resulttextarea" style="height: 59vh;margin-top: 6px;" hidden=""></textarea></dialog>
+<dialog id="entry" style="width: 100%;"><div style="display: flex;justify-content: space-between;"><h3 id="methodstringh3"></h3><h3 id="methodtypeh3" style="color: darkgrey;margin-left: 10px;"></h3></div><div id="editmode"><div><input id="contentlength" style="border-bottom: 0;border-radius: 4px 4px 0 0;font-size: 18px;padding-bottom: 23px;"><textarea id="sampletextarea" class="sampletextarea"></textarea></div><div hidden=""><div style="border: solid grey;border-radius: 4px 4px 0 0;border-width: 1px 1px 0;color: #dcdcdc;padding: 4px 10px 23px 10px;font-size: 18px;">Content-Length: <span id="contentlengthspan" style="color: #b8d7a3"></span></div><pre id="editsyntaxpre" style="border-color: grey!important;border-radius: 0 0 4px 4px;border-width: 0 1px 1px 1px!important;font-family: unset;font-size: 18px;line-height: inherit;margin: 0;padding: 4px 10px 13px 10px;"></pre></div></div><div style="padding: 4px;"></div><div style="justify-content: space-between;display: flex;"><div><div id="invalidjson" style="color: lightcoral;margin-bottom: 4px;"></div><button id="codebeautify" style="color: #999;font-family: serif;font-weight: bold;">{ }</button></div><button id="startrequest">🚀</button></div><div id="spinnerdiv" style="border: 8px solid;border-color: grey grey dimgrey;border-radius: 30px;height: 60px;margin: 20px;width: 60px;" hidden=""></div><div id="resultdiv" hidden=""><button id="resultbeautify" style="color: #9cdcfe;float: right;font-family: serif;font-weight: bold;">{ }</button><div id="resulttabs" style="margin-top: 8px;"><div hidden=""><div id="resultlengthdiv" style="font-size: 18px;padding: 10px;" hidden="">Content-Length:<span id="resultlengthspan" style="color: #b8d7a3"></span></div><pre id="resultpre" style="font-family: inherit;font-size: 18px;"></pre></div><textarea id="resulttextarea" style="display: block;margin-top: 10px;" hidden=""></textarea></div></div></dialog>
+<div id="hintdiv" hidden=""></div>
 <style>
 play-button::before{content: '▶️';cursor: pointer;}edit-button::before{content: '📝';cursor: pointer;}doc-icon::before{content: '📚';cursor: pointer;}spec-icon::before{content: '🌐';cursor: pointer;}more-icon::before{content: '🙋';cursor: pointer;}
 dialog{background-color: #161616;border: 0;}default-textarea{display: none;overflow: hidden;}
 button{background-color: dimgrey;border: 0;border-radius: 4px;cursor: pointer;height: 30px;width: 60px;}
 button:active{background-color: grey;border: 1px solid black;}
-textarea,input{background-color: transparent;border-radius: 4px;border: 1px solid grey;color: #bbb;font-size: 18px;outline: 0;padding: 4px 10px;width: 84vw;}
-textarea{height: 16vh;}
+textarea,input{background-color: transparent;border-radius: 4px;border: 1px solid grey;color: #bbb;font-size: 18px;outline: 0;padding: 4px 10px;width: 100%;}
+textarea{resize: vertical;}
+#hintdiv::before{border: 4px solid #292929;content: '';position: absolute;top: 10px;transform: rotate(45deg);}.hintdivright::before{left: -4px;}.hintdivleft::before{right: -4px;}
+#hintdiv{background-color: #292929;border-radius: 4px;color: #eee;font-size: 16px;margin-top: -14px;padding: 2px 8px;pointer-events: none;position: absolute;}
+default-textarea{text-align: right;}default-textarea>textarea{width: 100%;}default-textarea>button{background-color: darkgrey;}
+client-notification::before{content: '➡️';}client-request::before{content: '↩️';}server-notification::before{content: '⬅️';}server-request::before{content: '↪️';}
+#methodstringh3{color: grey;}#methodstringh3:hover{color: darkgrey;}.sampletextarea{border-top: 0px;border-radius: 0px 0px 4px 4px;display: block;}
+#codebeautify,#resultbeautify{background-color: #444;}#codebeautify:active,#resultbeautify:active{background-color: #494949;}
 </style>
 <template id="listitem">
 <play-button></play-button>
 <edit-button></edit-button><doc-icon></doc-icon><spec-icon></spec-icon><more-icon></more-icon>
-<default-textarea><textarea></textarea></default-textarea>
+<default-textarea><textarea></textarea><button>▶️</button></button>
+<button>💾</button></default-textarea>
 </template>
-<script src="mainScript.js"></script>
+<script src="mainScript.js" type="module"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
 </body>
 </html>
